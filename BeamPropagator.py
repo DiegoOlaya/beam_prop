@@ -126,6 +126,7 @@ class BeamPropagator:
         z_length:float, 
         num_samples:int=None, 
         step_size:float=None,
+        z_offset:float=0.0,
     ) -> np.ndarray:
         '''Defines the array of z values considered by the propagator. Must provide one of `num_samples` or
         `step_size`. If both are provided, `num_samples` takes priority. Sets the `z_arr` and `z_step` class 
@@ -135,10 +136,12 @@ class BeamPropagator:
         ----------
         z_length : float
             The length in physical units of the system.
-        num_samples : int
+        num_samples : int, optional
             An integer number representing the number of samples along that dimension.
-        step_size : float
+        step_size : float, optional
             The step size in physical units between sample points.
+        z_offset : float, optional (default=0.0)
+            An alternate value for the zero coordinate that offsets the array accoringly.
 
         Raises
         ------
@@ -148,9 +151,8 @@ class BeamPropagator:
         Returns
         -------
         np.ndarray
-            An array containing evenly spaced points in [`0`, `z_length`].
+            An array containing evenly spaced points in [`0`, `z_length`] + z_offset (if defined).
         '''
-        #TODO: Add optional z-offset parameter to the function.
         # Check if we have enough information to set array.
         if (num_samples is None and step_size is None):
             raise ValueError("Either the number of samples or the step size must be provided.")
@@ -165,7 +167,7 @@ class BeamPropagator:
         # Executes if only the step size is provided.
         num_samples = np.ceil(x_length / step_size)
         samples, step = np.linspace(start = 0, stop = z_length, num = num_samples, retstep=True)
-        self.z_arr = samples
+        self.z_arr = samples + z_offset
         self.z_step = step
         return samples
 
