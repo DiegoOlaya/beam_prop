@@ -279,7 +279,6 @@ class BeamPropagator:
         self.field_steps[0] = self.E0
         # Define the free-space propagation trasnfer function in Fourier space.
         freqs = self.get_fx_values()
-        # TODO: Add object index of refraction variable.
         H = np.exp(-2j * np.pi * np.emath.sqrt((self.idx / self.wl)**2 - (freqs)**2) * (self.z_step/2))
         # Perform the split-step algorithm for each element in the array.
         for i in range(len(self.field_steps)-1):
