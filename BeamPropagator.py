@@ -84,10 +84,13 @@ class BeamPropagator:
         x_length:float, 
         num_samples:int=None, 
         step_size:float=None,
+        x_array:np.ndarray = None,
     ) -> np.ndarray:
         '''Defines the array of x values considered by the propagator. Must provide one of `num_samples` or
         `step_size`. If both are provided, `num_samples` takes priority. Sets the `x_arr` and `x_step` class 
-        variables and returns the x-value array.
+        variables and returns the x-value array. Alternatively, one can provide an array to be the x-sampling
+        array for the `BeamPropagator` object to store. Providing this array will override all other function
+        behavior.
 
         Parameters
         ----------
@@ -97,6 +100,8 @@ class BeamPropagator:
             An integer number representing the number of samples along that dimension.
         step_size : float, optional
             The step size in physical units between sample points.
+        x_array : np.ndarray, optional
+            The array of values corresponding to the desired x-coordinate sampling locations.
 
         Raises
         ------
@@ -108,6 +113,11 @@ class BeamPropagator:
         np.ndarray
             An array containing evenly spaced points in [`-x_length/2`, `x_length/2`].
         '''
+        # Check if array parameter is passed.
+        if x_array is not None:
+            self.x_arr = x_array
+            self.x_step = np.abs(x_array[1] - x_array[0])
+            return self.x_arr
         # Check if we have enough information to set array.
         if (num_samples is None and step_size is None):
             raise ValueError("Either the number of samples or the step size must be provided.")
