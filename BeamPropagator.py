@@ -278,7 +278,7 @@ class BeamPropagator:
         # Initialize the first element with the given initial field configuration.
         self.field_steps[0] = self.E0
         # Define the free-space propagation trasnfer function in Fourier space.
-        freqs = self.get_frequencies()
+        freqs = self.get_fx_values()
         # TODO: Add object index of refraction variable.
         H = np.exp(-2j * np.pi * np.emath.sqrt((self.idx / self.wl)**2 - (freqs)**2) * (self.z_step/2))
         # Perform the split-step algorithm for each element in the array.
@@ -300,8 +300,9 @@ class BeamPropagator:
         # Return the final field configuration after propagation.
         return self.field_steps[-1]
     
-    def get_frequencies(self):
+    def get_fx_values(self):
         '''Returns the array corresponding to the frequency components of the 
-        np.fft.fft function, using the given field parameters.
+        np.fft.fft function, using the given field parameters. This array corresponds
+        to the transverse frequency components as determined by the x-dimension sampling array.
         '''
         return np.fft.fftfreq(self.E0.size, self.x_step)    
