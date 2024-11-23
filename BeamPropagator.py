@@ -79,7 +79,12 @@ class BeamPropagator:
         '''
         self.idx = new_n
 
-    def set_x_array(self, x_length:float, num_samples:int=None, step_size:float=None) -> np.ndarray:
+    def set_x_array(
+        self, 
+        x_length:float, 
+        num_samples:int=None, 
+        step_size:float=None,
+    ) -> np.ndarray:
         '''Defines the array of x values considered by the propagator. Must provide one of `num_samples` or
         `step_size`. If both are provided, `num_samples` takes priority. Sets the `x_arr` and `x_step` class 
         variables and returns the x-value array.
@@ -88,9 +93,9 @@ class BeamPropagator:
         ----------
         x_length : float
             The length in physical units of the system.
-        num_samples : int
+        num_samples : int, optional
             An integer number representing the number of samples along that dimension.
-        step_size : float
+        step_size : float, optional
             The step size in physical units between sample points.
 
         Raises
