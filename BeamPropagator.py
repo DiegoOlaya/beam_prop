@@ -239,7 +239,7 @@ class BeamPropagator:
         '''
         self.flags['abs'] = False
 
-    def set_index_perturbation(self, inhom_form:np.ndarray):
+    def set_x_idx_pertubation(self, inhom_form:np.ndarray):
         '''Tells the propagator to include an inhomogeneous index in the propgation region defined by
         the user. Assumes a small perturbation of the index of refraction, where the index is of the form
         `n + dn`.
@@ -259,7 +259,7 @@ class BeamPropagator:
         # Set index perturbation.
         self.idx_pert = np.exp(2j * np.pi * self.z_step * inhom_form / self.wl)
 
-    def remove_index_perturbation(self):
+    def rm_x_idx_perturbation(self):
         '''Turns off behavior accounting for a perurbation in the index of refraction.
         '''
         self.flags['idx_pert'] = False
