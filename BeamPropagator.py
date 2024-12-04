@@ -257,7 +257,7 @@ class BeamPropagator:
         # Set flag.
         self.flags['idx_pert'] = True
         # Set index perturbation.
-        self.idx_pert = np.exp(2j * np.pi * self.z_step * inhom_form / self.wl)
+        self.idx_pert = np.exp(-2j * np.pi * self.z_step * inhom_form / self.wl)
 
     def rm_x_idx_perturbation(self):
         '''Turns off behavior accounting for a perurbation in the index of refraction.
