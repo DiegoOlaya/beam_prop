@@ -49,7 +49,7 @@ class BeamPropagator:
             E_field = E_field * self.abs_arr
         return E_field
             
-    def _handle_int_flags(self, E_field:np.ndarray) -> np.ndarray:
+    def _handle_int_flags(self, E_field:np.ndarray, i:int) -> np.ndarray:
         '''Handles intermediate transformations done on the E-field during the symmetrized split-step
         operation. Transformation are provided by the `flags` instance variable, a dictionary of boolean values
         naming each transformation.
@@ -58,12 +58,22 @@ class BeamPropagator:
         ----------
         E_field : np.ndarray
             The complex field amplitude before any transformations are applied.
+        i : int
+            The step number that is currently being computed, used to index into 
+            the correct row of any full-region storage structures.
 
         Returns
         -------
         np.ndarray
             The complex field amplitude after applying all defined transformations.
         '''
+        if self.flags.get('idx_arr') == True:
+            # Take advantage of element-wise multiplication to account for varying index.
+            # Need to pass the z-step (corresponding to the row in this implementation) 
+            # to the program to calculate the phase transformation.
+            idx_phase = np.exp(-2j * np.pi * self.z_step * self.idx_arr[i,:] / self.wl)
+            E_field = E_field * idx_phase
+        # Handle perturbations only along the x-dimension, but constant in z.
         if self.flags.get('idx_pert') == True:
             E_field = E_field * self.idx_pert
         return E_field
@@ -264,6 +274,28 @@ class BeamPropagator:
         '''
         self.flags['idx_pert'] = False
     
+    def set_z_dep_idx(self, idx_arr:np.ndarray):
+        '''Provide an array of index values over the propagation region to use. Changes propagation
+        behavior to account for the new index values.
+
+        Parameters
+        ----------
+        idx_arr : np.ndarray
+            An array containing the value of the index perturbation at each point in the sampling region.
+            Must have an appropriate shape corresponding to (z_len, x_len) to match the sampling space.
+        '''
+        # Check if index array is of the correct shape.
+        if idx_arr.shape[0] != len(self.z_arr) or idx_arr.shape[1] != len(self.x_arr):
+            raise IndexError('Dimensions do not match the sampling parameters stored.')
+        # Assign a flag and instance variable to the index array.
+        self.flags['idx_arr'] = True
+        self.idx_arr = idx_arr
+
+    def rm_z_dep_idx(self):
+        '''Remove dependence on a z-dependent index of refraction.
+        '''
+        self.flags['idx_arr'] = False
+    
     def propagate(self) -> np.ndarray:
         '''Uses the split-step Fourier transform method to compute the complex field amplitude
         at each z position specified by the object's `z` array.
@@ -285,7 +317,7 @@ class BeamPropagator:
             # Performs symmetrized split-step algorithm.
             field_ft = np.fft.fft(self.field_steps[i])
             new_field = np.fft.ifft(field_ft * H)
-            new_field = self._handle_int_flags(new_field)
+            new_field = self._handle_int_flags(new_field, i)
             new_field = np.fft.fft(new_field)
             new_field = np.fft.ifft(new_field * H)
             # Handle post-FT transformations.
