@@ -1,25 +1,5 @@
 import numpy as np
 
-def gaussian_amp(A:float, x, waist:float, mu:float) -> np.ndarray:
-    '''Generate array of gaussian amplitude values for the sampled x values.
-    
-    :param A: The amplitude of the wave.
-    :type A: float 
-    :param x: Array of x-positions at which to evaluate the amplitude.
-    :type x: list
-    :param waist: The beam waist radius of the gaussian profile.
-    :type waist: float 
-    :param mu: The maximum intensity position of the gaussian profile.
-    :type mu: float 
-
-    Returns
-    -------
-    ndarray
-        A list of values corresponding to the real amplitude at the given x values.
-    '''
-    arg = -1*((x - mu) / waist)**2
-    return A * np.exp(arg)
-
 def aperture_mask(x, low_bound:float, high_bound:float, index = False):
     '''Produces a binary mask array defining an aperture.
     
@@ -48,6 +28,26 @@ def aperture_mask(x, low_bound:float, high_bound:float, index = False):
         return mask
     # If index=False, aperture is based on location.
     return [1 if low_bound <= pos <= high_bound else 0 for pos in x]
+
+def gaussian_amp(A:float, x, waist:float, mu:float) -> np.ndarray:
+    '''Generate array of gaussian amplitude values for the sampled x values.
+    
+    :param A: The amplitude of the wave.
+    :type A: float 
+    :param x: Array of x-positions at which to evaluate the amplitude.
+    :type x: list
+    :param waist: The beam waist radius of the gaussian profile.
+    :type waist: float 
+    :param mu: The maximum intensity position of the gaussian profile.
+    :type mu: float 
+
+    Returns
+    -------
+    ndarray
+        A list of values corresponding to the real amplitude at the given x values.
+    '''
+    arg = -1*((x - mu) / waist)**2
+    return A * np.exp(arg)
 
 def lens_phase_transform(x, focal_len:float, wavelen:float) -> np.ndarray:
     '''Returns the paraxial approximation of the thin-lens phase transfer function.
