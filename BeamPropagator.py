@@ -30,6 +30,13 @@ class BeamPropagator:
         self.wl = wavelen
 
     ### Helper methods ###
+    def _get_fx_values(self):
+        '''Returns the array corresponding to the frequency components of the 
+        np.fft.fft function, using the given field parameters. This array corresponds
+        to the transverse frequency components as determined by the x-dimension sampling array.
+        '''
+        return np.fft.fftfreq(self.E0.size, self.x_step)
+    
     def _handle_post_flags(self, E_field:np.ndarray) -> np.ndarray:
         '''Handles any post FT transformations done on the E-field. What transformations
         to perform are provided by the `flags` instance variable, a dictionary of boolean values
@@ -310,7 +317,7 @@ class BeamPropagator:
         # Initialize the first element with the given initial field configuration.
         self.field_steps[0] = self.E0
         # Define the free-space propagation trasnfer function in Fourier space.
-        freqs = self.get_fx_values()
+        freqs = self._get_fx_values()
         H = np.exp(-2j * np.pi * np.emath.sqrt((self.idx / self.wl)**2 - (freqs)**2) * (self.z_step/2))
         # Perform the split-step algorithm for each element in the array.
         for i in range(len(self.field_steps)-1):
@@ -330,10 +337,3 @@ class BeamPropagator:
             self.field_steps[i+1] = new_field
         # Return the final field configuration after propagation.
         return self.field_steps[-1]
-    
-    def get_fx_values(self):
-        '''Returns the array corresponding to the frequency components of the 
-        np.fft.fft function, using the given field parameters. This array corresponds
-        to the transverse frequency components as determined by the x-dimension sampling array.
-        '''
-        return np.fft.fftfreq(self.E0.size, self.x_step)    
