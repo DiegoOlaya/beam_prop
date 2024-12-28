@@ -192,7 +192,7 @@ class BeamPropagator:
         if num_samples is not None:
             samples, step = np.linspace(start = 0, stop = z_length, num = num_samples, retstep=True)
             # Store the resulting array and step into class variables.
-            self.z_arr = samples
+            self.z_arr = samples + z_offset
             self.z_step = step
             # Returns the z_array for computation.
             return samples
