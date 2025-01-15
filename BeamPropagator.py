@@ -30,6 +30,13 @@ class BeamPropagator:
         self.wl = wavelen
 
     ### Helper methods ###
+    def _get_fx_values(self):
+        '''Returns the array corresponding to the frequency components of the 
+        np.fft.fft function, using the given field parameters. This array corresponds
+        to the transverse frequency components as determined by the x-dimension sampling array.
+        '''
+        return np.fft.fftfreq(self.E0.size, self.x_step)
+    
     def _handle_post_flags(self, E_field:np.ndarray) -> np.ndarray:
         '''Handles any post FT transformations done on the E-field. What transformations
         to perform are provided by the `flags` instance variable, a dictionary of boolean values
@@ -49,7 +56,7 @@ class BeamPropagator:
             E_field = E_field * self.abs_arr
         return E_field
             
-    def _handle_int_flags(self, E_field:np.ndarray) -> np.ndarray:
+    def _handle_int_flags(self, E_field:np.ndarray, i:int) -> np.ndarray:
         '''Handles intermediate transformations done on the E-field during the symmetrized split-step
         operation. Transformation are provided by the `flags` instance variable, a dictionary of boolean values
         naming each transformation.
@@ -58,12 +65,22 @@ class BeamPropagator:
         ----------
         E_field : np.ndarray
             The complex field amplitude before any transformations are applied.
+        i : int
+            The step number that is currently being computed, used to index into 
+            the correct row of any full-region storage structures.
 
         Returns
         -------
         np.ndarray
             The complex field amplitude after applying all defined transformations.
         '''
+        if self.flags.get('idx_arr') == True:
+            # Take advantage of element-wise multiplication to account for varying index.
+            # Need to pass the z-step (corresponding to the row in this implementation) 
+            # to the program to calculate the phase transformation.
+            idx_phase = np.exp(-2j * np.pi * self.z_step * self.idx_arr[i,:] / self.wl)
+            E_field = E_field * idx_phase
+        # Handle perturbations only along the x-dimension, but constant in z.
         if self.flags.get('idx_pert') == True:
             E_field = E_field * self.idx_pert
         return E_field
@@ -175,7 +192,7 @@ class BeamPropagator:
         if num_samples is not None:
             samples, step = np.linspace(start = 0, stop = z_length, num = num_samples, retstep=True)
             # Store the resulting array and step into class variables.
-            self.z_arr = samples
+            self.z_arr = samples + z_offset
             self.z_step = step
             # Returns the z_array for computation.
             return samples
@@ -239,7 +256,7 @@ class BeamPropagator:
         '''
         self.flags['abs'] = False
 
-    def set_index_perturbation(self, inhom_form:np.ndarray):
+    def set_x_idx_pertubation(self, inhom_form:np.ndarray):
         '''Tells the propagator to include an inhomogeneous index in the propgation region defined by
         the user. Assumes a small perturbation of the index of refraction, where the index is of the form
         `n + dn`.
@@ -257,12 +274,34 @@ class BeamPropagator:
         # Set flag.
         self.flags['idx_pert'] = True
         # Set index perturbation.
-        self.idx_pert = np.exp(2j * np.pi * self.z_step * inhom_form / self.wl)
+        self.idx_pert = np.exp(-2j * np.pi * self.z_step * inhom_form / self.wl)
 
-    def remove_index_perturbation(self):
+    def rm_x_idx_perturbation(self):
         '''Turns off behavior accounting for a perurbation in the index of refraction.
         '''
         self.flags['idx_pert'] = False
+    
+    def set_z_dep_idx(self, idx_arr:np.ndarray):
+        '''Provide an array of index values over the propagation region to use. Changes propagation
+        behavior to account for the new index values.
+
+        Parameters
+        ----------
+        idx_arr : np.ndarray
+            An array containing the value of the index perturbation at each point in the sampling region.
+            Must have an appropriate shape corresponding to (z_len, x_len) to match the sampling space.
+        '''
+        # Check if index array is of the correct shape.
+        if idx_arr.shape[0] != len(self.z_arr) or idx_arr.shape[1] != len(self.x_arr):
+            raise IndexError('Dimensions do not match the sampling parameters stored.')
+        # Assign a flag and instance variable to the index array.
+        self.flags['idx_arr'] = True
+        self.idx_arr = idx_arr
+
+    def rm_z_dep_idx(self):
+        '''Remove dependence on a z-dependent index of refraction.
+        '''
+        self.flags['idx_arr'] = False
     
     def propagate(self) -> np.ndarray:
         '''Uses the split-step Fourier transform method to compute the complex field amplitude
@@ -278,14 +317,14 @@ class BeamPropagator:
         # Initialize the first element with the given initial field configuration.
         self.field_steps[0] = self.E0
         # Define the free-space propagation trasnfer function in Fourier space.
-        freqs = self.get_fx_values()
+        freqs = self._get_fx_values()
         H = np.exp(-2j * np.pi * np.emath.sqrt((self.idx / self.wl)**2 - (freqs)**2) * (self.z_step/2))
         # Perform the split-step algorithm for each element in the array.
         for i in range(len(self.field_steps)-1):
             # Performs symmetrized split-step algorithm.
             field_ft = np.fft.fft(self.field_steps[i])
             new_field = np.fft.ifft(field_ft * H)
-            new_field = self._handle_int_flags(new_field)
+            new_field = self._handle_int_flags(new_field, i)
             new_field = np.fft.fft(new_field)
             new_field = np.fft.ifft(new_field * H)
             # Handle post-FT transformations.
@@ -298,10 +337,3 @@ class BeamPropagator:
             self.field_steps[i+1] = new_field
         # Return the final field configuration after propagation.
         return self.field_steps[-1]
-    
-    def get_fx_values(self):
-        '''Returns the array corresponding to the frequency components of the 
-        np.fft.fft function, using the given field parameters. This array corresponds
-        to the transverse frequency components as determined by the x-dimension sampling array.
-        '''
-        return np.fft.fftfreq(self.E0.size, self.x_step)    
