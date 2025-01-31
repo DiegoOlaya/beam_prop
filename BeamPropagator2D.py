@@ -120,6 +120,7 @@ class BeamPropagator2D:
             If the length of the initial field does not match the dimensions specified
             by the `x` and `y` dimensions stored in the object.
         '''
-        if not np.array_equal(np.shape(E0), np.array([self.sim_dims['y'][2], self.sim_dims['x'][2]])):
+        sample_area_dims = np.array([self.sim_dims['y'][2], self.sim_dims['x'][2]])
+        if not np.array_equal(np.shape(E0), sample_area_dims):
             raise ValueError("Initial field array has improper dimensions.")
         self.E0 = E0
