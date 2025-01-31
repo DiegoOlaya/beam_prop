@@ -28,7 +28,7 @@ class BeamPropagator2D:
         self.idx = index
         self.wl = wavelen
         # Define storage for the properties of each of the simulation dimensions.
-        self.sim_dims = {}
+        self.sim_dims = dict()
 
     ## -------------------------------------------- ##
 
