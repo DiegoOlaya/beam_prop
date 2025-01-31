@@ -124,3 +124,80 @@ class BeamPropagator2D:
         if not np.array_equal(np.shape(E0), sample_area_dims):
             raise ValueError("Initial field array has improper dimensions.")
         self.E0 = E0
+
+    ## -------------------------------------------- ##
+
+    ## Absorbing boundary conditions. ##
+    def set_abs_bcs(self, width_factor:float):
+        '''Define a mask implementing absorbing boundary conditions using `width_factor` as a rolloff parameter.
+        Also changes the program behavior to implement absorbing boundary conditions.
+
+        Parameters
+        ----------
+            width_factor : float
+                A numeric parameter that defines how gradual the rolloff should be. Smaller numbers
+                result in more of the plane being absorbing.
+        '''
+        # Check for the existence of necessary instance variables.
+        try:
+            self.sim_dims['x'] is not None and self.sim_dims['y'] is not None
+        except:
+            raise NameError("Need to define the x and y sampling positions first.")
+        
+        # Add absorbing boundary flag.
+        self.flags['abs'] = [True, width_factor]
+        return True
+    
+    def _gen_abs_bc_mask(self) -> np.ndarray:
+        '''Return the array that multiplies the field to implement absorbing boundary conditions.
+
+        The absorbing boundary conditions are currently implemented as the expression
+
+        `abs_bs(n) = 1 - Exp[-(nx/2 - |n - nx/2|)/(abwidth)]`
+
+        where `nx` is the length of the x sampling array and `abwidth` is a parameter 
+        defined as `nx/width_factor`. This value is calculated at each integer value of 
+        the interval `[0, nx]` and is rounded to five decimal places.
+
+        Returns
+        -------
+        np.ndarray
+            The absorbing boundary conditions mask array.
+        '''
+        
+        # Generate the absorbing boundary mask.
+        # Check for equal x and y dimensions.
+        if self.sim_dims['x'][2] == self.sim_dims['y'][2]:
+            # Get the mask parameters.
+            length = self.sim_dims['x'][2]
+            abwidth = length / self.flags['abs'][1]
+            # Generate the array.
+            abs_arr = np.around([1-np.exp(-1*(length/2 - np.abs(i - length/2)) / abwidth) for i in range(length)],5)
+            # Generate a meshgrid to make a 2D absorbing mask. Using sparse arrays
+            # to save memory, only increasing dimensions on return.
+            ax, ay = np.meshgrid(abs_arr, abs_arr, sparse=True)
+            return ax * ay
+        # Handle unequal sampling dimensions.
+        else:
+            lx = self.sim_dims['x'][2]
+            ly = self.sim_dims['y'][2]
+            w_param = self.flags['abs'][1]
+            abwidth_x = lx / w_param
+            abwidth_y = ly / w_param
+            # Generate 1D arrays for each dimension.
+            abs_x = np.around([1-np.exp(-1*(lx/2 - np.abs(i - lx/2)) / abwidth_x) for i in range(lx)],5)
+            abs_y = np.around([1-np.exp(-1*(ly/2 - np.abs(i - ly/2)) / abwidth_y) for i in range(ly)],5)
+            # Make and return the 2D mask array.
+            ax, ay = np.meshgrid(abs_x, abs_y, sparse=True)
+            return ax * ay
+        
+    def remove_abs_bcs(self) -> bool:
+        '''Update propagator behavior to stop using absorbing boundary conditions.
+
+        Returns
+        -------
+        bool
+            Returns True on success.
+        '''
+        self.flags['abs'] = [False, None]
+        return True
