@@ -18,7 +18,7 @@ def aperture_mask(x, low_bound:float, high_bound:float, index = False):
 
     Returns
     -------
-    list-like
+    np.ndarray
         A list of the same length as `x` containing either zeros or ones, representing an optical
         aperture.
     '''
@@ -27,7 +27,8 @@ def aperture_mask(x, low_bound:float, high_bound:float, index = False):
         mask[low_bound:(high_bound + 1)] = 1
         return mask
     # If index=False, aperture is based on location.
-    return [1 if low_bound <= pos <= high_bound else 0 for pos in x]
+    mask = [1 if low_bound <= pos <= high_bound else 0 for pos in x]
+    return np.asarray(mask)
 
 def gaussian_amp(A:float, x, waist:float, mu:float) -> np.ndarray:
     '''Generate array of gaussian amplitude values for the sampled x values.
@@ -66,7 +67,7 @@ def lens_phase_transform(x, focal_len:float, wavelen:float) -> np.ndarray:
     np.ndarray
         The values of the phase transfer function at each point in `x`.
     '''
-    return np.exp((1.0j) * (np.pi / (wavelen * focal_len)) * np.square(x))
+    return np.exp((-1.0j) * (np.pi / (wavelen * focal_len)) * np.square(x))
 
 def update_idx_intensity(
     idx_arr:np.ndarray, 
