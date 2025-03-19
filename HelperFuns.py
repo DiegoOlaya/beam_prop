@@ -110,8 +110,29 @@ def delta_idx_intensity(
         at each sampling position.
     '''
     return int_coeff * intensity_arr
+
+def delta_idx_field( 
+    field_arr:np.ndarray, 
+    int_coeff:float = None,
+) -> np.ndarray:
+    '''Calculate the change in the index of refraction at each sampling 
+    position using the real value of the electric field at that position in the previous iteration.
+
+    Parameters
+    ----------
+    field_arr : np.ndarray
+        Array of computed fields for the previous time-step.
+    int_coeff : float
+        The coefficient determining how much the intensity contributes to 
+        the new index array.
+
+    Returns
+    -------
+    np.ndarray
+        An array of values representing a change in the index of refraction
+        at each sampling position.
     '''
-    return idx_arr + int_coeff * intensity_arr
+    return int_coeff * np.real(field_arr)
 
 def update_idx_grad_I(
     idx_arr:np.ndarray, 
