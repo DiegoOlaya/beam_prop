@@ -92,13 +92,11 @@ def delta_idx_intensity(
     intensity_arr:np.ndarray, 
     int_coeff:float = None,
 ) -> np.ndarray:
-    '''Update the index of refraction at each sampling position using the
-    computed intensity values.
+    '''Calculate the change in the index of refraction at each sampling 
+    position using the intensity at that position in the previous iteration.
 
     Parameters
     ----------
-    idx_arr : np.ndarray
-        Array of index of refraction for the previous time-step.
     intensity_arr : np.ndarray
         Array of computed intensities for the previous time-step.
     int_coeff : float
@@ -108,7 +106,10 @@ def delta_idx_intensity(
     Returns
     -------
     np.ndarray
-        The new array of index of refraction values at each sampling position.
+        An array of values representing a change in the index of refraction
+        at each sampling position.
+    '''
+    return int_coeff * intensity_arr
     '''
     return idx_arr + int_coeff * intensity_arr
 
