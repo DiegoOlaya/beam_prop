@@ -69,8 +69,26 @@ def lens_phase_transform(x, focal_len:float, wavelen:float) -> np.ndarray:
     '''
     return np.exp((-1.0j) * (np.pi / (wavelen * focal_len)) * np.square(x))
 
-def update_idx_intensity(
-    idx_arr:np.ndarray, 
+def plane_wave_phase_factor(x, wavelen:float, theta:float) -> np.ndarray:
+    '''Returns the phase factor for a plane wave at an angle `theta` to the x-axis.
+
+    Parameters
+    ----------
+    x : list-like
+        A vector of positions at which the plane wave exists.
+    wavelen : float
+        The wavelength of the incident light in physical units.
+    theta : float
+        The angle of the plane wave with respect to the z-axis in degrees.
+
+    Returns
+    -------
+    np.ndarray
+        The values of the phase factor at each point in `x`.
+    '''
+    return np.exp((1.0j) * (2 * np.pi / wavelen) * x * np.sin(np.radians(theta)))
+
+def delta_idx_intensity( 
     intensity_arr:np.ndarray, 
     int_coeff:float = None,
 ) -> np.ndarray:
