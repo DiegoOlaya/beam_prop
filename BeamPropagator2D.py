@@ -41,6 +41,42 @@ class BeamPropagator2D:
         num_samples:int=None,
         step_size:float=None,
     ) -> bool:
+        '''General function to specify the dimensions of each axis of the 
+        simulation region.
+
+        Parameters
+        ----------
+        dim : str
+            A single character noting what dimension to set. One of 'x', 'y', 
+            or 'z'.
+        start : float
+            The leftmost position of the simulation region in the specified 
+            dimension.
+        end : float
+            The rightmost position of the simulation region in the specified 
+            dimension.
+        num_samples : int, optional
+            The number of sampled points along the axis, by default None. 
+            Either this or `step_size` must be provided.
+        step_size : float, optional
+            The interval between sampled points along the axis, by default 
+            None. Either this or `num_samples` must be provided. If both are 
+            provided, this parameter will be ignored.
+
+        Returns
+        -------
+        bool
+            Returns true on successful execution. The dimension's properties 
+            are stored in the class instance variable `sim_dims` as a list of 
+            form [start, end, num_samples].
+
+        Raises
+        ------
+        ValueError
+            If the dimension is not one of 'x', 'y', or 'z'.
+        ValueError
+            If neither `num_samples` nor `step_size` are provided.
+        '''
         if dim not in ['x', 'y', 'z']:
             raise ValueError("The dimension must be one of 'x', 'y', or 'z'.")
         if (num_samples is None and step_size is None):
@@ -61,6 +97,35 @@ class BeamPropagator2D:
         num_samples:int=None, 
         step_size:float=None,
     ) -> bool:
+        '''Wrapper function which sets the properties of the simulation region 
+        x dimension.
+
+        Parameters
+        ----------
+        start : float
+            The leftmost position of the simulation region in the x dimension.
+        end : float
+            The rightmost position of the simulation region in the x dimension.
+        num_samples : int, optional
+            The number of sampled points along the axis, by default None. 
+            Either this or `step_size` must be provided.
+        step_size : float, optional
+            The interval between sampled points along the axis, by default 
+            None. Either this or `num_samples` must be provided. If both are 
+            provided, this parameter will be ignored.
+
+        Returns
+        -------
+        bool
+            Returns true on successful execution. The dimension's properties 
+            are stored in the class instance variable `sim_dims` as a list of 
+            form [start, end, num_samples].
+
+        Raises
+        ------
+        ValueError
+            If neither `num_samples` nor `step_size` are provided.
+        '''
         return self.set_dimension_array('x', start, end, num_samples, step_size)
     
     def set_y_dimension(
@@ -70,6 +135,35 @@ class BeamPropagator2D:
         num_samples:int=None, 
         step_size:float=None,
     ) -> bool:
+        '''Wrapper function which sets the properties of the simulation region 
+        y dimension.
+
+        Parameters
+        ----------
+        start : float
+            The leftmost position of the simulation region in the y dimension.
+        end : float
+            The rightmost position of the simulation region in the y dimension.
+        num_samples : int, optional
+            The number of sampled points along the axis, by default None. 
+            Either this or `step_size` must be provided.
+        step_size : float, optional
+            The interval between sampled points along the axis, by default 
+            None. Either this or `num_samples` must be provided. If both are 
+            provided, this parameter will be ignored.
+
+        Returns
+        -------
+        bool
+            Returns true on successful execution. The dimension's properties 
+            are stored in the class instance variable `sim_dims` as a list of 
+            form [start, end, num_samples].
+
+        Raises
+        ------
+        ValueError
+            If neither `num_samples` nor `step_size` are provided.
+        '''
         return self.set_dimension_array('y', start, end, num_samples, step_size)
     
     def set_z_dimension(
@@ -79,12 +173,60 @@ class BeamPropagator2D:
         num_samples:int=None, 
         step_size:float=None,
     ) -> bool:
+        '''Wrapper function which sets the properties of the simulation region 
+        z dimension.
+
+        Parameters
+        ----------
+        start : float
+            The leftmost position of the simulation region in the z dimension.
+        end : float
+            The rightmost position of the simulation region in the z dimension.
+        num_samples : int, optional
+            The number of sampled points along the axis, by default None. 
+            Either this or `step_size` must be provided.
+        step_size : float, optional
+            The interval between sampled points along the axis, by default 
+            None. Either this or `num_samples` must be provided. If both are 
+            provided, this parameter will be ignored.
+
+        Returns
+        -------
+        bool
+            Returns true on successful execution. The dimension's properties 
+            are stored in the class instance variable `sim_dims` as a list of 
+            form [start, end, num_samples].
+
+        Raises
+        ------
+        ValueError
+            If neither `num_samples` nor `step_size` are provided.
+        '''
         return self.set_dimension_array('z', start, end, num_samples, step_size)
     
     ## -------------------------------------------- ##
 
     ## Universal dimension getter. ##
     def get_dimension_array(self, dim:str) -> np.ndarray:
+        '''Return the array of sampled points in the specified dimension.
+
+        Parameters
+        ----------
+        dim : str
+            A single character in ['x', 'y', 'z'] denoting the dimension to get.
+
+        Returns
+        -------
+        np.ndarray
+            The array of sampled points in the specified dimension.
+
+        Raises
+        ------
+        ValueError
+            If the dimension is not one of 'x', 'y', or 'z'.
+        ValueError
+            If the dimension has not been set.
+        '''
         if dim not in ['x', 'y', 'z']:
             raise ValueError("The dimension must be one of 'x', 'y', or 'z'.")
         if dim not in self.sim_dims:
@@ -94,12 +236,48 @@ class BeamPropagator2D:
     
     ## Individual dimension getters for convenience. ##
     def get_x_dimension(self) -> np.ndarray:
+        '''Return the array of sampled points in the x dimension.
+
+        Returns
+        -------
+        np.ndarray
+            The array of sampled points in the x dimension.
+
+        Raises
+        ------
+        ValueError
+            If the dimension has not been set.
+        '''
         return self.get_dimension_array('x')
     
     def get_y_dimension(self) -> np.ndarray:
+        '''Return the array of sampled points in the y dimension.
+
+        Returns
+        -------
+        np.ndarray
+            The array of sampled points in the y dimension.
+
+        Raises
+        ------
+        ValueError
+            If the dimension has not been set.
+        '''
         return self.get_dimension_array('y')
     
     def get_z_dimension(self) -> np.ndarray:
+        '''Return the array of sampled points in the z dimension.
+
+        Returns
+        -------
+        np.ndarray
+            The array of sampled points in the z dimension.
+
+        Raises
+        ------
+        ValueError
+            If the dimension has not been set.
+        '''
         return self.get_dimension_array('z')
     
     ## -------------------------------------------- ##
