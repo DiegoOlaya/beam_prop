@@ -419,6 +419,53 @@ class BeamPropagator2D:
         self.flags['idx'] = [True, idx_arr]
         return True
     
+    def set_2D_index_perturbation(self, idx_arr:np.ndarray) -> bool:
+        '''Require the propgator to use a spatially varying index of refraction
+        perturbation.
+
+        Parameters
+        ----------
+        idx_arr : np.ndarray
+            A 2D array of the same dimensions as each XY plane of the simulation 
+            region. The perturbation is assumed to be the same for all Z slices. 
+            The array dimensions should be [y, x].
+
+        Returns
+        -------
+        bool
+            True on success. The index perturbation is stored in the
+            instance variable `flags['idx']`.
+
+        Raises
+        ------
+        RuntimeError
+            If the X and Y dimensions of the simulation region have not been set.
+        ValueError
+            If the dimensions of the index perturbation array do not match the
+            dimensions of the XY plane of the simulation region.
+
+        Notes
+        -----
+        This method is preferable for the general index perturbation method when
+        the perturbation is assumed to be the same for all Z slices. It only stores
+        a 2D array instead of a 3D array, which saves memory.
+
+        See Also
+        --------
+        set_index_perturbation : The general method for setting index perturbations.
+        remove_index_perturbation : Remove the index perturbation from the propagator.
+        '''
+        # Check required dimensions are set.
+        if ('x' not in self.sim_dims) or ('y' not in self.sim_dims):
+            raise RuntimeError("Need to define x and y dimensions before setting 2D index perturbation.")
+        # Check that the index array has the correct dimensions.
+        area_dims = np.array([self.sim_dims['y'][2], self.sim_dims['x'][2]])
+        if not np.array_equal(np.shape(idx_arr), area_dims):
+            raise ValueError("Index perturbation array has improper dimensions.")
+        # Add index perturbation flag.
+        self.flags['idx'] = [True, idx_arr]
+        return True
+        
     def remove_index_perturbation(self) -> bool:
         '''Stops the propagator from using an index of refraction perturbation 
         and deletes any exisiting perturbation from the propagator.
