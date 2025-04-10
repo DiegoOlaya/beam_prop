@@ -379,3 +379,64 @@ class BeamPropagator2D:
         '''
         self.flags['abs'] = [False, None]
         return True
+    
+    ## -------------------------------------------- ##
+    
+    ## Index of refraction modulation. ##
+    def set_index_perturbation(self, idx_arr:np.ndarray) -> bool:
+        '''Require the propagator to use a spatially varying index of refraction 
+        perturbation.
+
+        Parameters
+        ----------
+        idx_arr : np.ndarray
+            A 3D array of the same dimensions as the simulation region. specifying 
+            the size of the index perturbation at each point in the simulation 
+            region. The array dimensions should be [z, y, x].
+
+        Returns
+        -------
+        bool
+            Returns True on success. The index perturbation is stored in the
+            instance variable `flags['idx']`.
+
+        Raises
+        ------
+        RuntimeError
+            If the dimensions of the simulation region have not been set.
+        ValueError
+            If the dimensions of the index perturbation array do not match the
+            dimensions of the simulation region.
+        '''
+        # Check that all dimensions are set.
+        if len(self.sim_dims.keys()) != 3:
+            raise RuntimeError("Need to define all three dimensions before setting perturbation.")
+        # Check that the index array has the correct dimensions.
+        area_dims = np.array([self.sim_dims['z'][2], self.sim_dims['y'][2], self.sim_dims['x'][2]])
+        if not np.array_equal(np.shape(idx_arr), area_dims):
+            raise ValueError("Index perturbation array has improper dimensions.")
+        # Add index perturbation flag.
+        self.flags['idx'] = [True, idx_arr]
+        return True
+    
+    def remove_index_perturbation(self) -> bool:
+        '''Stops the propagator from using an index of refraction perturbation 
+        and deletes any exisiting perturbation from the propagator.
+
+        Returns
+        -------
+        bool
+            Returns True on success. The index perturbation that was set is 
+            deleted from the propagator.
+
+        Warnings
+        --------
+            If no index perturbation was set, a warning is issued.
+        '''
+        if 'idx' in self.flags:
+            del self.flags['idx']
+        else:
+            warnings.warn("No index perturbation to remove.")
+        return True
+    
+    ## -------------------------------------------- ##
