@@ -31,6 +31,61 @@ class BeamPropagator2D:
         self.sim_dims = dict()
 
     ## -------------------------------------------- ##
+    
+    ## Getter/setter methods for the wavelength and index. ##
+    def set_wavelength(self, wavelen:float) -> bool:
+        '''Set the wavelength of light to be propagated.
+
+        Parameters
+        ----------
+        wavelen : float
+            The wavelength of light to be propagated in physical units.
+
+        Returns
+        -------
+        bool
+            Returns true on success.
+        '''
+        self.wl = wavelen
+        return True
+    
+    def get_wavelength(self) -> float:
+        '''Get the wavelength of light to be propagated.
+
+        Returns
+        -------
+        float
+            The wavelength of light to be propagated in physical units.
+        '''
+        return self.wl
+    
+    def set_base_index(self, index:float) -> bool:
+        '''Set the base index of refraction for the medium.
+
+        Parameters
+        ----------
+        index : float
+            The index of refraction for the medium.
+
+        Returns
+        -------
+        bool
+            Returns true on success.
+        '''
+        self.idx = index
+        return True
+    
+    def get_base_index(self) -> float:
+        '''Get the base index of refraction for the medium.
+
+        Returns
+        -------
+        float
+            The index of refraction for the medium.
+        '''
+        return self.idx
+    
+    ## -------------------------------------------- ##
 
     ## Universal dimension setter. ##
     def set_dimension_array(
