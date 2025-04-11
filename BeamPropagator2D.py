@@ -262,18 +262,22 @@ class BeamPropagator2D:
     ## -------------------------------------------- ##
 
     ## Universal dimension getter. ##
-    def get_dimension_array(self, dim:str) -> np.ndarray:
+    def get_dimension_array(self, dim:str, retstep = False) -> np.ndarray:
         '''Return the array of sampled points in the specified dimension.
 
         Parameters
         ----------
         dim : str
             A single character in ['x', 'y', 'z'] denoting the dimension to get.
+        retstep : bool, optional
+            If True, return the step size of the sampled points. Default is False.
 
         Returns
         -------
         np.ndarray
             The array of sampled points in the specified dimension.
+        float, optional
+            Only returned if `retstep` is true. The step size for the sampled points.
 
         Raises
         ------
@@ -287,7 +291,7 @@ class BeamPropagator2D:
         if dim not in self.sim_dims:
             raise ValueError("The dimension has not been set.")
         start, end, num_samples = self.sim_dims[dim]
-        return np.linspace(start, end, num_samples)
+        return np.linspace(start, end, num_samples, retstep=retstep)
     
     ## Individual dimension getters for convenience. ##
     def get_x_dimension(self) -> np.ndarray:
