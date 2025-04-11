@@ -546,3 +546,166 @@ class BeamPropagator2D:
         return True
     
     ## -------------------------------------------- ##
+
+    ## Propagation function. ##
+    def propagate(self) -> np.ndarray:
+        '''Propagate the electric field through the simulation region with the 
+        split-step FT method.
+
+        This method is meant to be called once all aspects of the simulation 
+        region have been defined. It requires the initial electric field be set.
+        It also requires any absorbing boundary conditions or perturbations to 
+        be set before running the function. The entire array of propagated fields 
+        can be accessed in the class instance variable `field_steps`.
+
+        Returns
+        -------
+        np.ndarray
+            The final electric field after propagation through the simulation 
+            region. Array shape is (y, x).
+
+        Raises
+        ------
+        RuntimeError
+            If the dimensions of the simulation region have not been set.
+        RuntimeError
+            If the initial electric field has not been set.
+
+        Warnings
+        --------
+        RuntimeWarning
+            If NaN values are introduced to the computation.
+        '''
+        # Check pre-requisite conditions.
+        if len(self.sim_dims.keys()) != 3:
+            raise RuntimeError("Need to define all three dimensions before propagating.")
+        if self.E0 is None:
+            raise RuntimeError("Need to define the initial electric field before propagating.")
+        
+        # Init storage data structures.
+        reg_shape = (self.sim_dims['z'][2], self.sim_dims['y'][2], self.sim_dims['x'][2])
+        self.field_steps = np.empty(reg_shape, dtype=complex)
+        self.field_steps[0] = self.E0
+
+        # Define the transfer function of free space.
+        fx, fy = self._get_sampling_freqs()
+        _, z_step = self.get_dimension_array('z', retstep=True)
+        H = np.exp(2j * np.pi * np.emath.sqrt((self.idx/self.wl)**2 - (fx**2 + fy**2)) * (z_step/2))
+
+        # Check for and store absorbing boundary conditions if needed.
+        abs_bc = None
+        if self.flags.get('abs', [False])[0] == True:
+            abs_bc = self._gen_abs_bc_mask()
+        
+        # Begin the propagation loop.
+        for i in range(self.sim_dims['z'][2] - 1):
+            # Perform symmetrized FFT algorithm.
+            field_ft = np.fft.fft2(self.field_steps[i])
+            new_field = np.fft.ifft2(field_ft * H)
+            # Apply any intermediate propagation transformations.
+            new_field = self._handle_intermediate_flags(new_field, i, z_step)
+            # Continue the split-step algorithm.
+            new_field = np.fft.fft2(new_field)
+            new_field = np.fft.ifft2(new_field * H)
+            
+            # Handle absorbing boundary conditions if needed.
+            if abs_bc is not None:
+                new_field = new_field * abs_bc
+
+            # Check if any NaN values have been introduced to the computation.
+            if np.isnan(new_field).any():
+                warnings.warn(
+                    "At least one NaN value appears in the E field at propagation step {val}.".format(val=i),
+                    category=RuntimeWarning
+                )
+                
+            # Store the new field in the corresponding array position.
+            self.field_steps[i+1] = new_field
+        
+        # Return the final field.
+        return self.field_steps[-1]
+         
+    ## Propagation Helper Functions ##
+    def _handle_intermediate_flags(
+        self, 
+        field:np.ndarray, 
+        iter_step:int, 
+        z_step: float
+    ) -> np.ndarray:
+        '''Handle any transformations that need to applied to the field in the 
+        intermediate step of the symmetrized split-step FT algorithm.
+
+        Parameters
+        ----------
+        field : np.ndarray
+            The field to be transformed.
+        iter_step : int
+            The index of the current iteration step in the propagation loop.
+        z_step : float
+            The step size in the z dimension.
+
+        Returns
+        -------
+        np.ndarray
+            The transformed field.
+        '''
+        if self.flags.get('idx', [False])[0] == True:
+            field = field * self._get_idx_phase_transform(iter_step, z_step)
+        return field
+    
+    def _get_idx_phase_transform(self, iter_step:int, z_step:float) -> np.ndarray:
+        '''Checks the form of the index perturbation and returns the phase 
+        transformation to apply to the field.
+
+        The phase transformation is given by the expression 
+        
+        .. math::
+            \\delta\\phi(x,y) = \\exp[ik_0z\\delta n(x,y)]
+
+        Parameters
+        ----------
+        iter_step : int
+            The index position corresponding to the active iteration step in the
+            propagation loop.
+        z_step : float
+            The step size in the z dimension.
+
+        Returns
+        -------
+        np.ndarray
+            The phase transformation to apply to the field.
+        '''
+        idx_arr = self.flags['idx'][1]
+        # If 3D index perturbation, use the z slice corresponding to the current 
+        # iteration. Otherwise use the 2D array.
+        if len(np.shape(idx_arr)) == 3:
+            idx_arr = idx_arr[iter_step]
+        
+        # Use element-wise multiplication to apply the index perturbation.
+        phase = np.exp((2j * np.pi / self.wl) * idx_arr * z_step)
+        return phase
+
+    def _get_sampling_freqs(self):
+        '''Return the x and y sampling frequencies in sparse array form.
+
+        The sampling frequency arrays are meant to be used in calculations that 
+        take advantage of numpy's broadcasting feature to produce a complete 
+        2D result.
+
+        Returns
+        -------
+        fx, fy : tuple of np.ndarrays
+            `fx` is an array of dimension (1 x nx) with the sampling frequencies 
+            in the x dimension. `fy` is an array of dimension (ny x 1) with the 
+            sampling frequencies in the y dimension.
+        '''
+        # Get sample spacing.
+        _, dx = self.get_dimension_array('x', retstep=True)
+        _, dy = self.get_dimension_array('y', retstep=True)
+        # Get the sampling frequencies.
+        fx = np.fft.fftfreq(self.sim_dims['x'][2], dx)
+        fy = np.fft.fftfreq(self.sim_dims['y'][2], dy)
+        return fx, np.transpose([fy])
+
+    ## -------------------------------------------- ##
+    
