@@ -18,7 +18,7 @@ def aperture_mask(x, low_bound:float, high_bound:float, index = False):
 
     Returns
     -------
-    list-like
+    np.ndarray
         A list of the same length as `x` containing either zeros or ones, representing an optical
         aperture.
     '''
@@ -27,7 +27,8 @@ def aperture_mask(x, low_bound:float, high_bound:float, index = False):
         mask[low_bound:(high_bound + 1)] = 1
         return mask
     # If index=False, aperture is based on location.
-    return [1 if low_bound <= pos <= high_bound else 0 for pos in x]
+    mask = [1 if low_bound <= pos <= high_bound else 0 for pos in x]
+    return np.asarray(mask)
 
 def gaussian_amp(A:float, x, waist:float, mu:float) -> np.ndarray:
     '''Generate array of gaussian amplitude values for the sampled x values.
@@ -66,20 +67,36 @@ def lens_phase_transform(x, focal_len:float, wavelen:float) -> np.ndarray:
     np.ndarray
         The values of the phase transfer function at each point in `x`.
     '''
-    return np.exp((1.0j) * (np.pi / (wavelen * focal_len)) * np.square(x))
+    return np.exp((-1.0j) * (np.pi / (wavelen * focal_len)) * np.square(x))
 
-def update_idx_intensity(
-    idx_arr:np.ndarray, 
-    intensity_arr:np.ndarray, 
-    int_coeff:float = None,
-) -> np.ndarray:
-    '''Update the index of refraction at each sampling position using the
-    computed intensity values.
+def plane_wave_phase_factor(x, wavelen:float, theta:float) -> np.ndarray:
+    '''Returns the phase factor for a plane wave at an angle `theta` to the x-axis.
 
     Parameters
     ----------
-    idx_arr : np.ndarray
-        Array of index of refraction for the previous time-step.
+    x : list-like
+        A vector of positions at which the plane wave exists.
+    wavelen : float
+        The wavelength of the incident light in physical units.
+    theta : float
+        The angle of the plane wave with respect to the z-axis in degrees.
+
+    Returns
+    -------
+    np.ndarray
+        The values of the phase factor at each point in `x`.
+    '''
+    return np.exp((1.0j) * (2 * np.pi / wavelen) * x * np.sin(np.radians(theta)))
+
+def delta_idx_intensity( 
+    intensity_arr:np.ndarray, 
+    int_coeff:float = None,
+) -> np.ndarray:
+    '''Calculate the change in the index of refraction at each sampling 
+    position using the intensity at that position in the previous iteration.
+
+    Parameters
+    ----------
     intensity_arr : np.ndarray
         Array of computed intensities for the previous time-step.
     int_coeff : float
@@ -89,9 +106,33 @@ def update_idx_intensity(
     Returns
     -------
     np.ndarray
-        The new array of index of refraction values at each sampling position.
+        An array of values representing a change in the index of refraction
+        at each sampling position.
     '''
-    return idx_arr + int_coeff * intensity_arr
+    return int_coeff * intensity_arr
+
+def delta_idx_field( 
+    field_arr:np.ndarray, 
+    int_coeff:float = None,
+) -> np.ndarray:
+    '''Calculate the change in the index of refraction at each sampling 
+    position using the real value of the electric field at that position in the previous iteration.
+
+    Parameters
+    ----------
+    field_arr : np.ndarray
+        Array of computed fields for the previous time-step.
+    int_coeff : float
+        The coefficient determining how much the intensity contributes to 
+        the new index array.
+
+    Returns
+    -------
+    np.ndarray
+        An array of values representing a change in the index of refraction
+        at each sampling position.
+    '''
+    return int_coeff * np.real(field_arr)
 
 def update_idx_grad_I(
     idx_arr:np.ndarray, 

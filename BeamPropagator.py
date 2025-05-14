@@ -78,7 +78,7 @@ class BeamPropagator:
             # Take advantage of element-wise multiplication to account for varying index.
             # Need to pass the z-step (corresponding to the row in this implementation) 
             # to the program to calculate the phase transformation.
-            idx_phase = np.exp(-2j * np.pi * self.z_step * self.idx_arr[i,:] / self.wl)
+            idx_phase = np.exp(2j * np.pi * self.z_step * self.idx_arr[i,:] / self.wl)
             E_field = E_field * idx_phase
         # Handle perturbations only along the x-dimension, but constant in z.
         if self.flags.get('idx_pert') == True:
@@ -274,7 +274,7 @@ class BeamPropagator:
         # Set flag.
         self.flags['idx_pert'] = True
         # Set index perturbation.
-        self.idx_pert = np.exp(-2j * np.pi * self.z_step * inhom_form / self.wl)
+        self.idx_pert = np.exp(2j * np.pi * self.z_step * inhom_form / self.wl)
 
     def rm_x_idx_perturbation(self):
         '''Turns off behavior accounting for a perurbation in the index of refraction.
@@ -318,7 +318,7 @@ class BeamPropagator:
         self.field_steps[0] = self.E0
         # Define the free-space propagation trasnfer function in Fourier space.
         freqs = self._get_fx_values()
-        H = np.exp(-2j * np.pi * np.emath.sqrt((self.idx / self.wl)**2 - (freqs)**2) * (self.z_step/2))
+        H = np.exp(2j * np.pi * np.emath.sqrt((self.idx / self.wl)**2 - (freqs)**2) * (self.z_step/2))
         # Perform the split-step algorithm for each element in the array.
         for i in range(len(self.field_steps)-1):
             # Performs symmetrized split-step algorithm.
