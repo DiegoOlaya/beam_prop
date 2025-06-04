@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 
+from PIL import Image
+
 ## ---- Colormap Functions ---- ##
 
 def gen_rgb_cmap(
@@ -318,12 +320,139 @@ def cplot_fields(
             x, y, z_i, levels=levels,
             cmap=cmap_i, alpha=af,
             antialiased=antialiased,
+            extend='both',
         )
         ax.contour(
             x, y, z_i, levels=levels,
             cmap=cmap_i, alpha=ac,
             linewidths=linewidths,
+            extend='both',
         )
     return fig, ax
 
 ## ----------------------------- ##
+
+## ---- Bitmap Plotting ---- ##
+
+# TODO: Add function to create a bitmap from a set of up to three arrays.
+
+# Create bitmap from a single array.
+def _make_bitmap_from_array(arr: np.ndarray) -> np.ndarray:
+    '''Helper function to create a bitmap from a single array. The resulting 
+    array is scaled to be between 0 and 255, with 255 always being the maximum 
+    value in the original array. The resulting bitmap is an unsigned 8-bit 
+    integer.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        A 2D numeric array to be converted to a bitmap.
+
+    Returns
+    -------
+    np.ndarray
+        A 2D array with the same shape as the input array, with values 
+        scaled to be between 0 and 255.
+    '''
+    max_val = np.max(arr)
+    scaled_arr = arr / max_val
+    scaled_arr = (scaled_arr * 255)
+    return np.rint(scaled_arr).astype(np.uint8)
+
+def gen_rgb_bitmap(
+    to_plot: list,
+    channel_order: list = ['r', 'g', 'b'],
+    convert: bool = True,
+):
+    # Error checking.
+    if len(to_plot) > 3: 
+        raise ValueError("A maximum of three arrays can be plotted.")
+    if len(channel_order) != 3:
+        raise ValueError("Must be a list of length three for each RGB channel.")
+    
+    # Create the bitmap.
+    if convert:
+        to_plot = [_make_bitmap_from_array(arr) for arr in to_plot]
+
+    if len(to_plot) < 3:
+        # Pad the list with zeros if less than 3 arrays are provided.
+        to_plot += [np.zeros_like(to_plot[0])] * (3 - len(to_plot))
+
+    # Reorder the arrays according to the given channel order.
+    to_plot = [to_plot[channel_order.index(c)] for c in ['r', 'g', 'b']]
+
+    # Flatten and then produce the RGB channel array.
+    to_plot_flat = [arr.flatten() for arr in to_plot]
+    rgb_flt = [(r, g, b) for r, g, b in zip(*to_plot_flat)]
+    rgb_arr = np.array(rgb_flt, dtype=np.uint8)
+    # Reshape the array to the original shape.
+    rgb_shape = to_plot[0].shape
+    rgb_arr = rgb_arr.reshape((*rgb_shape, 3))
+    # Return final RGB array.
+    return rgb_arr
+
+# Generate an image from a bitmap.
+def make_bit_img(
+    bitmap: np.ndarray
+):
+    '''Generates a matplotlib image from a bitmap array. This is a wrapper for 
+    plt.imshow().
+
+    Parameters
+    ----------
+    bitmap : np.ndarray
+        An array of shape (n, m, 3) representing and RGB image.
+
+    Returns
+    -------
+    plt.AxesImage
+        A matplotlib image object displaying the bitmap image.
+    '''
+    return plt.imshow(bitmap)
+
+# Save a bitmap as an image file.
+
+def save_bitmap_img(
+    bitmap: np.ndarray,
+    filename: str,
+    fmt: str = None,
+):
+    '''Saves a bitmap array as an image file using the provided filename and 
+    format.
+
+    Parameters
+    ----------
+    bitmap : np.ndarray
+        RGB array of shape (n, m, 3) representing the image to be saved.
+    filename : str
+        The name of the file to save the image to.
+    fmt : str, optional
+        The format to save the image in, by default None. If None, the format 
+        is inherited from the filename. Format options are those supported by
+        pillow.
+
+    Raises
+    ------
+    ValueError
+        If the filename does not include a file extension when no format is 
+        specified.
+    ValueError
+        If the specified format does not match the filename extension.
+    '''
+    img = Image.fromarray(bitmap, mode='RGB')
+    if fmt is not None:
+        if '.' in filename:
+            ext_fmt = filename.split('.')[-1].upper()
+            if ext_fmt != fmt:
+                raise ValueError("Filename format does not match specified format.")
+        # Save the image with the given format.
+        img.save(filename, format=fmt)
+        return
+    
+    # Format not specified.
+    if '.' not in filename:
+        raise ValueError("Filename must include a file extension if no format is specified.")
+    img.save(filename)
+    return
+
+## ------------------------------ ##
