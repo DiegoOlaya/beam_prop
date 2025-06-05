@@ -4,92 +4,7 @@ import numpy as np
 
 from PIL import Image
 
-## ---- Colormap Functions ---- ##
-
-def gen_rgb_cmap(
-    color = 'red', 
-    name = 'rgb_scale', 
-    n_levels = 256
-) -> mpl.colors.ListedColormap:
-    '''Return a gradient colormap for one of the three possible RGB colors.
-    The colormap is a gradient from black to the specified color.
-
-    Parameters
-    ----------
-    color : str, optional
-        The RGB color for the returned colormap, either 'red', 'green', 
-        or 'blue', by default 'red'
-    name : str, optional
-        A string with a name descrbing the resulting colormap, 
-        by default 'rgb_scale'
-    n_levels : int, optional
-        The integer number of levels for the resulting colormap, by 
-        default 256.
-
-    Returns
-    -------
-    matplotlib.colors.ListedColormap
-        Returns a leveled colormap of the specified color, where the number of 
-        levels is given by n_levels. The colormap is starts at black and ends
-        at 255 for the given color.
-
-    Raises
-    ------
-    ValueError
-        If the color is not 'red', 'green', or 'blue'.
-    ValueError
-        If the number of levels is not a positive integer.
-    '''
-    if color not in ['red', 'green', 'blue']:
-        raise ValueError("Color must be 'red', 'green', or 'blue'.")
-    if n_levels < 1:
-        raise ValueError("Number of levels must be a positive integer.")
-    
-    lvls = np.linspace(0, 255, n_levels)
-    if color == 'red':
-        colors = np.array([lvls / 255, np.zeros_like(lvls), np.zeros_like(lvls)]).T
-    elif color == 'green':
-        colors = np.array([np.zeros_like(lvls), lvls / 255, np.zeros_like(lvls)]).T
-    elif color == 'blue':
-        colors = np.array([np.zeros_like(lvls), np.zeros_like(lvls), lvls / 255]).T
-    
-    cmap = mpl.colors.ListedColormap(colors, name=name)
-    return cmap
-
-def gen_camp_from_color(
-    end_color,
-    start_color = (0, 0, 0, 1),
-    name = 'custom_cmap', 
-    n_levels = 256
-) -> mpl.colors.LinearSegmentedColormap:
-    '''Returns a gradient colormap between the two specified colors.
-
-    Parameters
-    ----------
-    end_color : str, listlike, tuple
-        The color corresponding to the maximum value of the colormap.
-    start_color : str, listlike, or tuple; optional
-        The color corresponding to the minimum value of the colormap, by 
-        default (0, 0, 0), representing black.
-    name : str, optional
-        A name for the colormap to provide to the matplotlib method, by default
-        'custom_cmap'
-    n_levels : int, optional
-        The number of steps in the the level colormap, by default 256
-
-    Returns
-    -------
-    matplotlib.colors.LinearSegmentedColormap
-        A colormap object with a gradient between the two specified colors.
-    '''
-    e_col = _process_color(end_color)
-    s_col = _process_color(start_color)
-    c_map = mpl.colors.LinearSegmentedColormap.from_list(
-        name,
-        [s_col, e_col],
-        N=n_levels,
-    )
-    return c_map
+## ---- Color Functions ---- ##
 
 def _process_color(color) -> tuple:
     '''Process color input and return a normalized RGB tuple.
@@ -282,8 +197,6 @@ def plot_fields(
 
 ## ---- Bitmap Plotting ---- ##
 
-# TODO: Add function to create a bitmap from a set of up to three arrays.
-
 # Create bitmap from a single array.
 def _make_bitmap_from_array(arr: np.ndarray) -> np.ndarray:
     '''Helper function to create a bitmap from a single array. The resulting 
@@ -307,6 +220,7 @@ def _make_bitmap_from_array(arr: np.ndarray) -> np.ndarray:
     scaled_arr = (scaled_arr * 255)
     return np.rint(scaled_arr).astype(np.uint8)
 
+# Create a bitmap from a set of up to three arrays.
 def gen_rgb_bitmap(
     to_plot: list,
     channel_order: list = ['r', 'g', 'b'],
@@ -359,7 +273,6 @@ def make_bit_img(
     return plt.imshow(bitmap)
 
 # Save a bitmap as an image file.
-
 def save_bitmap_img(
     bitmap: np.ndarray,
     filename: str,
