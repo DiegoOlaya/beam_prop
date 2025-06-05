@@ -4,7 +4,7 @@ import numpy as np
 
 from PIL import Image
 
-## ---- Color Functions ---- ##
+## Color Functions ##
 
 def _process_color(color) -> tuple:
     '''Process color input and return a normalized RGB tuple.
@@ -86,9 +86,9 @@ def _process_color(color) -> tuple:
     
     raise RuntimeError("Color format not recognized. Use hex format (#RRGGBB or #RGB) or RGB/RGBA tuple.")
     
-## ----------------------------- ##
+## -------------------------------------------- ##
 
-## ---- Contour Plotting ---- ##
+## Contour Plotting ##
 
 def plot_fields(
     x: np.ndarray,
@@ -193,9 +193,9 @@ def plot_fields(
     # Return the figure and axis objects.
     return fig, ax
 
-## ----------------------------- ##
+## -------------------------------------------- ##
 
-## ---- Bitmap Plotting ---- ##
+## Bitmap Plotting ##
 
 # Create bitmap from a single array.
 def _make_bitmap_from_array(arr: np.ndarray) -> np.ndarray:
@@ -316,4 +316,4 @@ def save_bitmap_img(
     img.save(filename)
     return
 
-## ------------------------------ ##
+## -------------------------------------------- ##
