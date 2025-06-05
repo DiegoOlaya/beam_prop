@@ -173,79 +173,16 @@ def _process_color(color) -> tuple:
     
 ## ----------------------------- ##
 
-## ---- Matplotlib Contour Plotting ---- ##
+## ---- Contour Plotting ---- ##
 
-def plot_contours(
-    x: np.ndarray,
-    y: np.ndarray,
-    z: np.ndarray,
-    levels: int,
-    cmap: mpl.colors.ListedColormap,
-    alpha_f: float = 1.0,
-    alpha_c: float = 1.0,
-    ax: mpl.axes.Axes = None,
-    antialiased: bool = True,
-    linewidths: float = 0.5,
-):
-    '''Plot the contours of a 2D field using matplotlib functions. Uses both
-    contourf and contour to plot the filled and line contours, respectively, 
-    avoiding white spaces in the plots when alpha is less than 1.
-
-    Parameters
-    ----------
-    x : np.ndarray
-        Array of x-coordinates for the plots.
-    y : np.ndarray
-        Array of y-coordinates for the plots.
-    z : np.ndarray
-        Array of values for each xy coordinate pair.
-    levels : int
-        The number of contour levels to be plotted.
-    cmap : mpl.colors.ListedColormap
-        The color map to be used in the plots.
-    alpha_f : float, optional
-        The transparency values for the filled contour plot, by default 1.0
-    alpha_c : float, optional
-        The transparency values for the edge contour plot, by default 1.0
-    ax : mpl.axes.Axes, optional
-        The axis object on which to plot the contours, by default None, which 
-        creates a new figure and axis object.
-    antialiased : bool, optional
-        Matplotlib keyword argument passed to the filled contour plot, by 
-        default True.
-    linewidths : float, optional
-        The width of the drawn contour lines, by default 0.5
-
-    Returns
-    -------
-    tuple, (Figure, Axis)
-        A tuple with both the Matplotlib figure and axis objects. If the Axis 
-        object is passed to the function, the tuple will be of the form 
-        (None, Axis).
-    '''
-    fig, ax = plt.subplots() if ax is None else (None, ax)
-    ax.contourf(
-        x, y, z, levels=levels, 
-        cmap=cmap, alpha=alpha_f,
-        antialiased=antialiased,
-    )
-    ax.contour(
-        x, y, z, levels=levels,
-        cmap=cmap, alpha=alpha_c,
-        linewidths=linewidths,
-    )
-    return fig, ax
-
-def cplot_fields(
+def plot_fields(
     x: np.ndarray,
     y: np.ndarray,
     z: list,
-    levels: int,
-    cmaps: list,
-    alphas: list,
+    max_colors: list,
+    norm_method : str = 'channel',
     ax: mpl.axes.Axes = None,
-    antialiased: bool = True,
-    linewidths: float = 0.5,
+    interpolation: str = 'none',
 ):
     '''Plot the contours of a list of 2D fields or cross-sections using the 
     matplotlib contour functions. The function uses contourf and contour to 
@@ -261,21 +198,20 @@ def cplot_fields(
         A list of 2D arrays, each representing a field array to be plotted.
     levels : int
         The number of contour levels to be plotted.
-    cmaps : list
-        A list of colormaps to be used for each field array to be plotted.
-    alphas : list
-        A list of arrays with the alpha values for the filled and edge contours
-        for each field. Each entry should be a list of two values, with the 
-        first values representing the filled contour alpha and the second value
-        representing the edge contour alpha.
+    max_colors : list
+        A list of the colors to be used for each field.
+    norm_method : str, optional
+        The normalization method to be used for the fields, by default 
+        'channel'. Must be one of 'channel', 'global', or 'equal'. 'Channel' 
+        normalizes each RGB channel separately; 'global' normalizes all fields 
+        by dividing them by the maximum value across all fields; and 'equal' 
+        normalizes each field by dividing it by its maximum value and then
+        dividing by the number of fields to ensure equal weighting.
     ax : mpl.axes.Axes, optional
         The Matplotlib Axis object to plot the fields on, by default None, 
         which creates a new figure and axis object.
-    antialiased : bool, optional
-        Matplotlib keyword argument passed to the filled contour plot, by 
-        default True.
-    linewidths : float, optional
-        The width of the drawn contour lines, by default 0.5
+    interpolation : str, optional
+        Matplotlib options to be passed for imshow(), by default 'none'.
 
     Returns
     -------
@@ -287,47 +223,59 @@ def cplot_fields(
     Raises
     ------
     ValueError
-        If the number of colormaps does not match the number of fields.
+        If the number of colors does not match the number of fields.
     ValueError
-        If any of the alpha value arrays are not of length 2.
-    ValueError
-        If any alpha value is not between 0 and 1.
+        If the normalization method is not one of 'channel', 'global', or
+        'equal'.
     '''
+    # Error checking.
+    if norm_method not in ['channel', 'global', 'equal']:
+        raise ValueError("Normalization method must be 'channel', 'global', or 'equal'.")
+    
     num_fields = len(z)
-    if len(cmaps) != num_fields:
-        raise ValueError("Number of colormaps must match number of fields.")
-    # Check the length of the alpha list.
-    if type(alphas[0]) != list:
-        # Make the list the right length if all the alphas are the same.
-        alphas = [alphas] * num_fields
-    # Check the alpha values for all entries.
-    for a_lst in alphas:
-        if len(a_lst) != 2:
-            raise ValueError("Alpha values must be a list of two values.")
-        if a_lst[0] < 0 or a_lst[0] > 1:
-            raise ValueError("Alpha values must be between 0 and 1.")
-        if a_lst[1] < 0 or a_lst[1] > 1:
-            raise ValueError("Alpha values must be between 0 and 1.")
+    if len(max_colors) != num_fields:
+        raise ValueError("Number of colors must match number of fields.")
     
+    # Calculate global maximum if using 'global' normalization.
+    if norm_method == 'global':
+        zmax = np.max([np.max(fld) for fld in z])
     
+    bitmap = np.zeros((len(y), len(x), 3))
     # Plot each of the fields in succession.
-    fn_iterables = zip(z, cmaps, alphas)
+    fn_iterables = zip(z, max_colors)
     fig, ax = plt.subplots() if ax is None else (None, ax)
-    for z_i, cmap_i, alpha_i in fn_iterables:
-        af = alpha_i[0]
-        ac = alpha_i[1]
-        ax.contourf(
-            x, y, z_i, levels=levels,
-            cmap=cmap_i, alpha=af,
-            antialiased=antialiased,
-            extend='both',
-        )
-        ax.contour(
-            x, y, z_i, levels=levels,
-            cmap=cmap_i, alpha=ac,
-            linewidths=linewidths,
-            extend='both',
-        )
+    for z_i, col_i in fn_iterables:
+        # Process the color input for the given field.
+        color = _process_color(col_i)
+
+        # Normalize field based on the specified method.
+        if norm_method == 'global':
+            z_i = z_i / zmax  # Normalize the field by the global maximum.
+        else:
+            z_i = z_i / np.max(z_i)  # Normalize the field by its maximum.
+        # If the weighting is 'equal', divide by the number of fields.
+        if norm_method == 'equal':
+            z_i = z_i / num_fields 
+        
+        # Add the fields to the bitmap.
+        for i in range(3):
+            bitmap[:, :, i] += z_i * color[i]
+
+    # If norm method is 'channel', normalize each RGB channel separately.
+    if norm_method == 'channel':
+        for i in range(3):
+            if np.max(bitmap[:, :, i]) > 0:
+                bitmap[:, :, i] = bitmap[:, :, i] / np.max(bitmap[:, :, i])
+
+    # Generate the contour plot using imshow.
+    fig, ax = plt.subplots() if ax is None else (None, ax)
+    ax_img = ax.imshow(
+        bitmap,
+        extent=(np.min(x), np.max(x), np.min(y), np.max(y)),
+        aspect='auto',
+        interpolation=interpolation,
+    )
+    # Return the figure and axis objects.
     return fig, ax
 
 ## ----------------------------- ##
