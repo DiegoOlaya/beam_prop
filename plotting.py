@@ -98,6 +98,7 @@ def plot_fields(
     norm_method : str = 'channel',
     ax: mpl.axes.Axes = None,
     interpolation: str = 'none',
+    origin: str = 'lower',
 ):
     '''Plot the contours of a list of 2D fields or cross-sections using the 
     matplotlib contour functions. The function uses contourf and contour to 
@@ -127,6 +128,10 @@ def plot_fields(
         which creates a new figure and axis object.
     interpolation : str, optional
         Matplotlib options to be passed for imshow(), by default 'none'.
+    origin : str, optional
+        Where to place the [0,0] location of the image, by default 'lower'.
+        This parameter accounts for possible mirroring of the image depending
+        on how the physical coordinates are defined in the simulation.
 
     Returns
     -------
@@ -189,6 +194,7 @@ def plot_fields(
         extent=(np.min(x), np.max(x), np.min(y), np.max(y)),
         aspect='auto',
         interpolation=interpolation,
+        origin=origin,
     )
     # Return the figure and axis objects.
     return fig, ax
@@ -255,7 +261,8 @@ def gen_rgb_bitmap(
 
 # Generate an image from a bitmap.
 def make_bit_img(
-    bitmap: np.ndarray
+    bitmap: np.ndarray,
+    origin: str = 'lower',
 ):
     '''Generates a matplotlib image from a bitmap array. This is a wrapper for 
     plt.imshow().
@@ -264,13 +271,17 @@ def make_bit_img(
     ----------
     bitmap : np.ndarray
         An array of shape (n, m, 3) representing and RGB image.
+    origin : str, optional
+        Where to place the [0,0] location of the image, by default 'lower'. 
+        This can be 'upper' or 'lower', depending on how the image should be 
+        displayed.
 
     Returns
     -------
     plt.AxesImage
         A matplotlib image object displaying the bitmap image.
     '''
-    return plt.imshow(bitmap)
+    return plt.imshow(bitmap, origin=origin)
 
 # Save a bitmap as an image file.
 def save_bitmap_img(
@@ -279,7 +290,10 @@ def save_bitmap_img(
     fmt: str = None,
 ):
     '''Saves a bitmap array as an image file using the provided filename and 
-    format.
+    format. Note that the the bitmap saves in image coordinates, which places 
+    the [0,0] location in the upper left corner of the image. Depending on how
+    the physical coordinates are defined in the simulation, this may result in 
+    mirrored images.
 
     Parameters
     ----------
