@@ -1,7 +1,7 @@
 import numpy as np
 import warnings
 
-class BeamPropagator:
+class BeamPropagator1D:
     '''An object containing the methods and results for 1+1D beam propagation.
     '''
 
