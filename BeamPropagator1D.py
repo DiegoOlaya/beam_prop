@@ -363,7 +363,7 @@ class BeamPropagator1D:
         ValueError
             If the length of the initial field does not match the `x` array class variable.
         '''
-        if len(E0) != len(self.sim_dims['x'][2]):
+        if len(E0) != self.sim_dims['x'][2]:
             raise ValueError("Initial field array must have same dimensions as x dimension sample array.")
         self.E0 = E0
 
