@@ -61,7 +61,39 @@ def circ_aperture(
     center:tuple,
     index=False
 ):
-    pass
+    '''Generates a circular aperture from the given parameters, with the
+    dimensions of the mask matching the given X and Y dimension.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        The x-coordinates of the grid points.
+    y : np.ndarray
+        The y-coordinates of the grid points.
+    radius : float
+        The radius of the circular aperture.
+    center : tuple
+        The (x, y) coordinates of the center of the circular aperture.
+    index : bool, optional
+        Tells the function whether the provided `radius` and `center` are
+        in index units or physical units. By default False, meaning they are in
+        physical units.
+
+    Returns
+    -------
+    np.ndarray
+        The circular aperture mask.
+    '''
+    # Set the shape of the X and Y meshgrid arrays based on what units used.
+    if not index:
+        X, Y = np.meshgrid(x, y, sparse=True)
+    else:
+        shape = (len(y), len(x))
+        Y, X = np.ogrid[:shape[0], :shape[1]]
+    # Use numpy's broadcasting to create the 2D mask.
+    cx, cy = center
+    mask = np.where((X - cx)**2 + (Y - cy)**2 <= radius**2, 1, 0)
+    return mask
 
 def sq_aperture(
     x:np.ndarray,
